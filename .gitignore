@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+.DS_Store
+
+# Frontend
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend
+backend/.env
+backend/data/vector_store.json
+
+# System
+.env
+*.log
