@@ -97,5 +97,5 @@ This project serves as a comprehensive example of integrating modern LLMs into a
 2. **The Query Phase**: When a user asks a question via Chat or Voice, their input is also embedded. The system performs a mathematical comparison (Cosine Similarity) against the stored vectors to find the most relevant pieces of information.
 3. **The Response Phase**: The retrieved "context" is fed into the `gemini-2.5-flash` model alongside the original question. This ensures the AI answers based **only** on the blog's content, preventing hallucinations and providing accurate information.
 
-## 📄 License
-This project is licensed under the MIT License.
+
+
