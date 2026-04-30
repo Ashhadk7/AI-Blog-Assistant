@@ -2,7 +2,7 @@
 
 A state-of-the-art AI-powered blog platform featuring a premium dark-mode interface and a dual-mode intelligent assistant. This project demonstrates a complete RAG (Retrieval-Augmented Generation) implementation using Google's Gemini models.
 
-![Project Preview](https://via.placeholder.com/1200x600/0f172a/8b5cf6?text=AI+Blog+Assistant+Preview)
+![Project Preview](preview/homepage.png)
 
 ## 🌟 Key Features
 
