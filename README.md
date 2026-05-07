@@ -92,4 +92,4 @@ Unlike standard LLM integrations, this project implements a custom **OpenAI-Comp
 4. **Proxy Flushing:** Uses `X-Accel-Buffering` and manual header flushing to ensure tokens reach the user instantly through the Cloudflare Tunnel.
 
 ---
-*Created with ❤️ by Ashhadk7 - Advancing Agentic Coding*
+*Muhammad Ashhad Khan*
