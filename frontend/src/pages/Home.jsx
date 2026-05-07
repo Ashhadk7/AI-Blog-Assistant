@@ -1,7 +1,25 @@
-import { blogs } from "../data/blogs";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export default function Home() {
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/blogs")
+      .then(res => res.json())
+      .then(data => {
+        setBlogs(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch blogs:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="loading">Loading articles...</div>;
+
   return (
     <>
       <section className="home-hero">

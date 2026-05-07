@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function ChatWidget({ onClose }) {
+export default function ChatWidget({ onClose, blogId }) {
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hello! I am the AI Blog Assistant. Ask me anything about our latest articles!" }
+    { role: "assistant", content: "Hello! I am the AI Blog Assistant. Ask me anything about this article!" }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +29,10 @@ export default function ChatWidget({ onClose }) {
       const response = await fetch("http://localhost:3000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({ 
+          message: userMessage,
+          blogId: blogId 
+        })
       });
 
       if (!response.ok) throw new Error("Network response was not ok");

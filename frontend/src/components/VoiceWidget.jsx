@@ -14,14 +14,38 @@ function getVapi() {
 // ✅ This ID is PERMANENT — server.js auto-updates the webhook URL on every restart
 const ASSISTANT_ID = "4503b47e-1080-4f77-b5b7-ebfcbfef9228";
 
-export default function VoiceWidget({ onClose }) {
+export default function VoiceWidget({ onClose, blogId }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [transcripts, setTranscripts] = useState([]);
   const [activePartial, setActivePartial] = useState(null);
   const [error, setError] = useState(null);
+  const [publicUrl, setPublicUrl] = useState("");
   const transcriptsEndRef = useRef(null);
   const listenersAttached = useRef(false);
+
+  // Fetch the public tunnel URL from the backend with polling
+  useEffect(() => {
+    const fetchConfig = () => {
+      fetch("http://localhost:3000/api/config")
+        .then(res => res.json())
+        .then(data => {
+          if (data.publicUrl) {
+            setPublicUrl(data.publicUrl);
+            setError(null); // Clear any "Connecting..." errors automatically
+            console.log("✅ Voice backend ready at:", data.publicUrl);
+          }
+        })
+        .catch(err => console.error("Failed to fetch public URL:", err));
+    };
+
+    fetchConfig(); // Initial check
+    const interval = setInterval(() => {
+      if (!publicUrl) fetchConfig();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [publicUrl]);
 
   // Auto-scroll to bottom when transcripts update
   useEffect(() => {
@@ -91,9 +115,46 @@ export default function VoiceWidget({ onClose }) {
 
     vapiInstance.on("error", (e) => {
       console.error("❌ Vapi Error:", e);
-      setError("Connection error. Please try again.");
+      // Log to backend for developer
+      fetch("http://localhost:3000/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: e, message: "Vapi Error" })
+      }).catch(() => {});
+
+      // Walk the nested Vapi error object to extract a readable string
+      // Vapi errors look like: { type, error: { errorMsg, error: { msg } } }
+      const extractMsg = (obj) => {
+        if (!obj) return null;
+        if (typeof obj === "string") return obj;
+        return (
+          obj.errorMsg ||
+          obj.msg ||
+          (typeof obj.message === "string" ? obj.message : null) ||
+          (typeof obj.error === "string" ? obj.error : null) ||
+          extractMsg(obj.error) ||
+          extractMsg(obj.message) ||
+          null
+        );
+      };
+
+      const rawMsg = extractMsg(e);
+      // Map internal Vapi errors to friendly messages
+      let friendlyMsg = "Connection ended. Please tap to try again.";
+      if (rawMsg) {
+        if (rawMsg.toLowerCase().includes("ejected") || rawMsg.toLowerCase().includes("meeting has ended")) {
+          friendlyMsg = "Session ended. Tap to start a new one.";
+        } else if (rawMsg.toLowerCase().includes("audio") || rawMsg.toLowerCase().includes("mic")) {
+          friendlyMsg = "Microphone issue. Check permissions and try again.";
+        } else if (rawMsg.toLowerCase().includes("timeout")) {
+          friendlyMsg = "Connection timed out. Please try again.";
+        } else {
+          friendlyMsg = rawMsg;
+        }
+      }
+
+      setError(friendlyMsg);
       setIsConnecting(false);
-      // Don't set isConnected to false immediately — let call-end handle it
     });
 
     return () => {
@@ -109,23 +170,48 @@ export default function VoiceWidget({ onClose }) {
 
   const handleToggleCall = useCallback(() => {
     const vapiInstance = getVapi();
-    setError(null);
 
     if (isConnected) {
-      console.log("⏹️ Stopping call...");
       vapiInstance.stop();
-    } else if (!isConnecting) {
-      console.log("▶️ Starting call with assistant:", ASSISTANT_ID);
+      return;
+    }
+
+    if (!isConnecting) {
+      if (!publicUrl) {
+        setError("Still searching for AI Brain... Please wait for the green light.");
+        return;
+      }
+
+      setError(null);
       setIsConnecting(true);
       setTranscripts([]);
       setActivePartial(null);
-      vapiInstance.start(ASSISTANT_ID).catch((err) => {
-        console.error("Failed to start call:", err);
-        setError("Failed to start. Check mic permissions.");
+      
+      console.log("🚀 Starting Expert Voice Session with URL:", publicUrl, "Blog ID:", blogId);
+
+      vapiInstance.start(ASSISTANT_ID, {
+        variableValues: {
+          blogId: String(blogId)
+        },
+        model: {
+          provider: "custom-llm",
+          url: `${publicUrl}/v1/chat/completions?blogId=${blogId}`,
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `You are an AI Blog Expert. You ONLY answer questions about blog article BlogId:${blogId}. If asked about topics not in this article, politely refuse. Keep responses concise and conversational for voice.`
+            }
+          ]
+        }
+      }).catch((err) => {
+        console.error("Vapi start error:", err);
+        const errMsg = err?.message || "Check mic permissions or Vapi keys.";
+        setError(`Connection Failed: ${errMsg}`);
         setIsConnecting(false);
       });
     }
-  }, [isConnected, isConnecting]);
+  }, [isConnected, isConnecting, blogId, publicUrl]);
 
   const handleClose = useCallback(() => {
     const vapiInstance = getVapi();
@@ -261,6 +347,26 @@ export default function VoiceWidget({ onClose }) {
         <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)", fontWeight: "500" }}>
           {isConnected ? "Tap to end call" : (isConnecting ? "Connecting..." : "Tap to speak")}
         </p>
+
+        {/* Connection Status Indicator */}
+        <div style={{ 
+          marginTop: '4px', 
+          fontSize: '11px', 
+          color: publicUrl ? '#4ade80' : '#fb7185',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          opacity: 0.8
+        }}>
+          <div style={{ 
+            width: '6px', 
+            height: '6px', 
+            borderRadius: '50%', 
+            backgroundColor: publicUrl ? '#4ade80' : '#fb7185',
+            boxShadow: publicUrl ? '0 0 8px #4ade80' : 'none'
+          }} />
+          {publicUrl ? "AI Brain Connected" : "Searching for AI Brain..."}
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,26 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { blogs } from "../data/blogs";
 
 export default function BlogPage() {
   const { id } = useParams();
-  const blog = blogs.find((b) => b.id === parseInt(id));
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/blogs")
+      .then(res => res.json())
+      .then(data => {
+        const found = data.find((b) => String(b.id) === String(id));
+        setBlog(found);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch blog:", err);
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) return <div className="loading">Loading article...</div>;
 
   if (!blog) {
     return (
@@ -39,7 +56,6 @@ export default function BlogPage() {
       )}
 
       <div className="article-content">
-        {/* Splitting content by newlines to render paragraphs if needed, though dummy data is simple string */}
         {blog.content.split('\n\n').map((paragraph, index) => (
           <p key={index}>{paragraph}</p>
         ))}

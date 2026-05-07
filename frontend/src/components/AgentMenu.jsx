@@ -1,14 +1,22 @@
 import { useState } from "react";
+import { useLocation, matchPath } from "react-router-dom";
 import VoiceWidget from "./VoiceWidget";
 import ChatWidget from "./ChatWidget";
 
 export default function AgentMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeAgent, setActiveAgent] = useState(null); // 'voice' or 'chat'
+  const location = useLocation();
+
+  // Check if we are on a blog page
+  const match = matchPath({ path: "/blog/:id" }, location.pathname);
+  const isBlogPage = !!match;
+  const blogId = match?.params?.id;
+
+  if (!isBlogPage) return null;
 
   const toggleMenu = () => {
     if (activeAgent) {
-      // If a widget is open, close it and show the menu
       setActiveAgent(null);
       setIsOpen(true);
     } else {
@@ -34,8 +42,8 @@ export default function AgentMenu() {
   return (
     <>
       {/* Active Widgets */}
-      {activeAgent === 'voice' && <VoiceWidget onClose={closeAgent} />}
-      {activeAgent === 'chat' && <ChatWidget onClose={closeAgent} />}
+      {activeAgent === 'voice' && <VoiceWidget onClose={closeAgent} blogId={blogId} />}
+      {activeAgent === 'chat' && <ChatWidget onClose={closeAgent} blogId={blogId} />}
 
       {/* Menu Options (only when open and no active agent) */}
       {isOpen && !activeAgent && (
@@ -66,7 +74,7 @@ export default function AgentMenu() {
           cursor: "pointer",
           display: "flex", justifyContent: "center", alignItems: "center",
           zIndex: 1002, transition: "all 0.3s ease", fontSize: "24px",
-          transform: isOpen ? "rotate(45deg)" : "rotate(0deg)"
+          transform: (isOpen || activeAgent) ? "rotate(45deg)" : "rotate(0deg)"
         }}
         title={activeAgent ? "Close & switch" : "AI Assistant"}
       >
