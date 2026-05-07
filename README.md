@@ -1,101 +1,95 @@
-# 🚀 AI Blog Assistant: Voice & Chat Powered by RAG
+# 🚀 AI Blog Expert: Hybrid RAG Voice & Chat Assistant
 
-A state-of-the-art AI-powered blog platform featuring a premium dark-mode interface and a dual-mode intelligent assistant. This project demonstrates a complete RAG (Retrieval-Augmented Generation) implementation using Google's Gemini models.
+A state-of-the-art AI-powered blog platform featuring a premium glassmorphic interface and a high-performance **Hybrid RAG (Retrieval-Augmented Generation)** assistant. This project combines the deep semantic understanding of Google Gemini with the ultra-low latency generation of Groq.
 
 ![Project Preview](preview/homepage.png)
 
 ## 🌟 Key Features
 
-- **💎 Premium Design**: Sleek, glassmorphic UI built with React and Vanilla CSS, featuring smooth animations and a responsive layout.
-- **💬 AI Chat Widget**: Instant text-based assistant capable of answering questions about any blog article with high accuracy.
-- **🎤 Vapi Voice Agent**: Fully interactive voice assistant for hands-free exploration of blog content.
-- **🧠 Advanced RAG Pipeline**:
-  - **Embeddings**: Uses `gemini-embedding-2` for high-dimensional semantic search.
-  - **Retrieval**: Local vector store with cosine similarity for fast, relevant context extraction.
-  - **Generation**: Powered by `gemini-2.5-flash` for intelligent, grounded, and conversational responses.
-- **🔄 Hot-Reloading**: Backend automatically reloads the knowledge base whenever new articles are ingested.
+- **💎 Premium Design**: Sleek, glassmorphic UI built with React and Vanilla CSS, featuring smooth animations, dark mode, and a responsive layout.
+- **🎤 Ultra-Fast Voice Agent**: Integrated with **Vapi**, providing a near-zero latency voice experience powered by Groq's custom hardware.
+- **💬 Intelligent Chat Widget**: Context-aware text assistant capable of deep article analysis and factual answers.
+- **🧠 Hybrid RAG Architecture**:
+  - **Embeddings**: Uses Google's `text-embedding-004` via the **Gemini SDK** for state-of-the-art semantic search.
+  - **Inference (LLM)**: Uses **Groq (Llama 3.3 70B)** for lightning-fast, conversational responses (under 1 second).
+  - **Grounding**: Strict context-locking ensures the AI only discusses the active article, preventing hallucinations.
+- **⚡ Automated Bridge**: Backend automatically manages **Cloudflare Tunnels** and reconfigures the Vapi Assistant URL on every startup.
+
+## 🏗️ Architecture Flow
+
+```mermaid
+graph TD
+    User((User)) -->|Voice/Text| Widget[Frontend Widget]
+    Widget -->|Request| Backend[Node.js Backend]
+    Backend -->|BlogID| Filter[Vector Filter]
+    Filter -->|Question| Embedding[Gemini Embeddings]
+    Embedding -->|Vector| Search[Cosine Similarity Search]
+    Search -->|Context Chunks| Groq[Groq Llama 3.3 70B]
+    Groq -->|SSE Stream| Widget
+    Widget -->|Audio/Text| User
+```
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: React 19, Vite, React Router, Vapi Web SDK.
-- **Backend**: Node.js, Express, Google Generative AI (Gemini).
-- **Tooling**: Cloudflared (for Vapi webhooks), Dotenv.
-
-## 📁 Project Structure
-
-```text
-├── frontend/             # React Application (currently AI-blog)
-│   ├── src/components/   # UI Widgets (Chat, Voice, AgentMenu)
-│   ├── src/data/         # Blog source data
-│   └── ...
-├── backend/              # Node.js Express Server
-│   ├── src/routes/       # Modular API endpoints
-│   ├── src/services/     # Embedding & RAG logic
-│   ├── data/             # Vector Store (JSON)
-│   └── scripts/          # Ingestion & setup scripts
-└── README.md             # Project documentation
-```
+- **Backend**: Node.js, Express, @google/genai, Groq SDK.
+- **AI Infrastructure**: Gemini (Embeddings), Groq (Inference), Vapi (Voice AI).
+- **Tooling**: Cloudflared (Tunneling), Dotenv, Cheerio.
 
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Node.js](https://nodejs.org/) (v20+)
 - [Gemini API Key](https://aistudio.google.com/)
-- [Vapi Account](https://vapi.ai/) (for voice assistant)
+- [Groq API Key](https://console.groq.com/)
+- [Vapi Account](https://vapi.ai/)
 
-### 2. Installation
+### 2. Environment Setup
+Create a `.env` file in the `backend/` directory:
+```env
+GEMINI_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+VAPI_PRIVATE_KEY=your_vapi_private_key
+VAPI_ASSISTANT_ID=your_assistant_id
+```
 
-1. **Clone the repository:**
+### 3. Installation & Run
+
+1. **Install Dependencies:**
    ```bash
-   git clone https://github.com/Ashhadk7/AI-Blog-Assistant.git
-   cd AI-Blog-Assistant
-   ```
-
-2. **Setup Backend:**
-   ```bash
-   cd backend
+   # Root
    npm install
-   ```
-   Create a `.env` file in the `backend/` folder:
-   ```env
-   GEMINI_API_KEY=your_key
-   VAPI_PRIVATE_KEY=your_key
-   VAPI_ASSISTANT_ID=your_id
+   # Backend
+   cd backend && npm install
+   # Frontend
+   cd ../frontend && npm install
    ```
 
-3. **Setup Frontend:**
-   ```bash
-   cd ../AI-blog
-   npm install
-   ```
-
-### 3. Running the App
-
-1. **Ingest Blog Data (Backend):**
+2. **Ingest Blog Data:**
    ```bash
    cd backend
    npm run ingest
    ```
 
-2. **Start Backend Server:**
+3. **Start the Platform:**
    ```bash
+   # Terminal 1 (Backend)
+   cd backend
+   npm run dev
+
+   # Terminal 2 (Frontend)
+   cd frontend
    npm run dev
    ```
 
-3. **Start Frontend App:**
-   ```bash
-   cd ../AI-blog
-   npm run dev
-   ```
+## 📖 Deep Dive: How the Voice Agent Works
 
-## 📖 Detailed Description
+Unlike standard LLM integrations, this project implements a custom **OpenAI-Compatible Streaming Bridge**:
 
-This project serves as a comprehensive example of integrating modern LLMs into a web application. 
+1. **Handshake:** When the voice call starts, the frontend sends the `blogId` to the backend.
+2. **Context Retrieval:** The backend performs a semantic search scoped **only** to that blog article.
+3. **SSE Protocol:** The backend streams tokens back to Vapi using the OpenAI SSE format, including mandatory role announcement chunks to prevent connection drops.
+4. **Proxy Flushing:** Uses `X-Accel-Buffering` and manual header flushing to ensure tokens reach the user instantly through the Cloudflare Tunnel.
 
-### How it works:
-1. **The Ingestion Phase**: The system reads raw blog data from `blogs.js`. Each article is processed, summarized, and split into chunks. These chunks are transformed into 3072-dimensional vectors (embeddings) using the Gemini API and stored locally.
-2. **The Query Phase**: When a user asks a question via Chat or Voice, their input is also embedded. The system performs a mathematical comparison (Cosine Similarity) against the stored vectors to find the most relevant pieces of information.
-3. **The Response Phase**: The retrieved "context" is fed into the `gemini-2.5-flash` model alongside the original question. This ensures the AI answers based **only** on the blog's content, preventing hallucinations and providing accurate information.
-
-
-
+---
+*Created with ❤️ by Ashhadk7 - Advancing Agentic Coding*
